@@ -2,13 +2,13 @@ package main
 
 import (
 	"log"
+	"solid-spork/src/api"
 	database "solid-spork/src/db"
-	"solid-spork/src/server"
 )
 
 func main() {
 	db := database.InitDB()
-	app := server.CreateApp(db)
+	server := api.CreateServer(db)
 
-	log.Fatal(app.Listen(":8080"))
+	log.Fatal(server.Listen(":8080"))
 }
