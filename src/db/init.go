@@ -1,43 +1,27 @@
 package db
 
 import (
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+	"log"
+	"solid-spork/src/model"
 )
 
-type Product struct {
-	gorm.Model
-	Code  string
-	Price uint
-}
-
 func InitDB() *gorm.DB {
-	dsn := "test.db"
-	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+	config := gorm.Config{TranslateError: true, Logger: logger.Default}
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN:                  "host=localhost user=root password=root dbname=solid_spork port=5432 sslmode=disable TimeZone=UTC",
+		PreferSimpleProtocol: true, // disables implicit prepared statement usage
+	}), &config)
 	if err != nil {
-		panic("failed to connect database")
-	}
-	// Migrate the schema
-	err = db.AutoMigrate(&Product{})
-	if err != nil {
-		panic("failed to migrate data")
+		log.Fatal("failed to init db")
 	}
 
-	// Create
-	db.Create(&Product{Code: "D42", Price: 100})
+	err = db.AutoMigrate(&model.User{})
+	if err != nil {
+		log.Fatal("failed to migrate table")
+	}
 
-	// Read
-	var product Product
-	db.First(&product, 1)                 // find product with integer primary key
-	db.First(&product, "code = ?", "D42") // find product with code D42
-
-	// Update - update product's price to 200
-	db.Model(&product).Update("Price", 200)
-	// Update - update multiple fields
-	db.Model(&product).Updates(Product{Price: 200, Code: "F42"}) // non-zero fields
-	db.Model(&product).Updates(map[string]interface{}{"Price": 200, "Code": "F42"})
-
-	// Delete - delete product
-	db.Delete(&product, 1)
 	return db
 }
