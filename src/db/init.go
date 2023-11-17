@@ -18,6 +18,7 @@ func InitDB() *gorm.DB {
 		log.Fatal("failed to init db")
 	}
 
+	// migrate db models
 	err = db.AutoMigrate(&model.User{})
 	if err != nil {
 		log.Fatal("failed to migrate table")
