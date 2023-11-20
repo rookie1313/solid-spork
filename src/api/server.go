@@ -2,8 +2,10 @@ package api
 
 import (
 	"errors"
+	"github.com/bytedance/sonic"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	_ "github.com/gofiber/fiber/v2/middleware/basicauth"
 	"gorm.io/gorm"
 )
 
@@ -21,7 +23,9 @@ var validate = validator.New(validator.WithRequiredStructEnabled())
 
 func CreateServer(db *gorm.DB) *Server {
 	app := fiber.New(fiber.Config{
-		Immutable: true,
+		Immutable:   true,
+		JSONDecoder: sonic.Unmarshal,
+		JSONEncoder: sonic.Marshal,
 		// glob error handle
 		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
 			code := fiber.StatusInternalServerError
