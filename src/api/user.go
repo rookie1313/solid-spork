@@ -11,6 +11,7 @@ import (
 func (server *Server) UserRoute(router fiber.Router) {
 	router.Post("/", server.createUser)
 	router.Get("/usersList", server.getAllUsers)
+	router.Get("/", server.getUserByEmail)
 }
 
 func (server *Server) createUser(ctx *fiber.Ctx) error {
@@ -27,7 +28,7 @@ func (server *Server) createUser(ctx *fiber.Ctx) error {
 			Message: err.Error(),
 		}
 	}
-	e := &model.User{Email: req.Email, Password: req.Password}
+	e := &model.User{Email: req.Email, Password: req.Password, Name: req.Name}
 	result := server.DB.Create(e)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
@@ -41,6 +42,7 @@ func (server *Server) createUser(ctx *fiber.Ctx) error {
 
 	response := &dtos.UserResponse{
 		ID:    e.Model.ID,
+		Name:  e.Name,
 		Email: e.Email,
 	}
 	return ctx.Status(fiber.StatusCreated).JSON(response)
@@ -51,6 +53,32 @@ func (server *Server) getAllUsers(ctx *fiber.Ctx) error {
 	result := server.DB.Model(&model.User{}).Find(&response)
 	if result.Error != nil {
 		return result.Error
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(response)
+}
+
+type findUserRequest struct {
+	Email string `query:"email"`
+}
+
+func (server *Server) getUserByEmail(ctx *fiber.Ctx) error {
+	u := new(findUserRequest)
+	if err := ctx.QueryParser(u); err != nil {
+		return &fiber.Error{
+			Code:    fiber.StatusBadRequest,
+			Message: err.Error(),
+		}
+	}
+	var response dtos.UserResponse
+	result := server.DB.Model(&model.User{}).Where("email = ?", u.Email).First(&response)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return &fiber.Error{
+				Code:    fiber.StatusOK,
+				Message: result.Error.Error(),
+			}
+		}
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response)
